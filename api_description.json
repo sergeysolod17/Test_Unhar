@@ -1,0 +1,187 @@
+openapi: 3.0.0
+info:
+  version: '1'
+  title: Test Documentation 
+  description: 'This documentation was created as a test task'
+servers:
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/alexey.goti.pisklov/Test/1
+paths:
+  /orders:
+    post:
+      security: 
+        - jwt: []
+      description: This endpoint takes a set of parameters as input and creates an order for delivery on the platform 
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order.request'
+      responses:
+        201:
+          description: This response means the successful creation of the order, the response body contains data that describes the current order. 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order.response'
+        401:
+          description: This response means there is a problem with the access token, maybe the lifetime of the token has expired or the token is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 1105
+                message: 'Invalid token'
+                details: 'This token alredy expired'
+        422: 
+          description: This response means that the incoming data were not validated and the platform cannot create an order for delivery
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+              example:
+                - code: 1050
+                  message: 'Invalid data'
+                  details: 'Invalid location field in incoming object'
+    get:
+      security: 
+        - jwt: []
+      parameters: 
+        - $ref: '#/components/parameters/Pagination.start'
+        - $ref: '#/components/parameters/Pagination.quantity'
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            example: paid
+      description: This endpoint provides access to a list of all created orders and also contains various filters that are available for filtering by specific fields.
+      responses:
+        200:
+          description: This response contains a list of orders based on incoming filters, the server will return this response if the query has at least 1 order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order.response'
+        204:
+          description: This response means that there are no orders matching the filters or no orders at all for this request  
+        401:
+          description: This response means there is a problem with the access token, maybe the lifetime of the token has expired or the token is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 1105
+                message: 'Invalid token'
+                details: 'This token alredy expired'
+  /orders/{id}:
+    get:
+      security: 
+        - jwt: []
+      parameters: 
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      description: This endpoint is responsible for access to a specific order by its identifier 
+      responses:
+        200:
+          description: This response contains information about a specific order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order.response'
+        401:
+          description: This response means there is a problem with the access token, maybe the lifetime of the token has expired or the token is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 1105
+                message: 'Invalid token'
+                details: 'This token alredy expired'
+        404:
+          description: This response means that it cannot find an order with this identifier  
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 135
+                message: 'Order not found'
+                details: 'Cannot find order with id: 123'
+          
+components:
+  schemas:
+    Location:
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+    Error:
+      type: object
+      properties:
+        code: 
+          type: integer
+        message: 
+          type: string
+        details: 
+          type: string
+    Order.request:
+      type: object
+      properties:
+        dimension: 
+          type: string
+        pickup: 
+          $ref: '#/components/schemas/Location'
+        dropOff:
+          $ref: '#/components/schemas/Location'
+    Order.response:
+      type: object
+      properties:
+        id: 
+          type: string
+        dimension: 
+          type: string
+        status:
+          type: string
+          enum: 
+            - Status1
+            - Status2
+            - Status3
+        pickup: 
+          $ref: '#/components/schemas/Location'
+        dropOff:
+          $ref: '#/components/schemas/Location'
+  parameters:
+    Pagination.start:
+      name: start
+      in: query
+      required: false
+      description: 'pagination start'
+      example: 4
+      schema:
+        type: integer
+    Pagination.quantity: 
+      name: quantity
+      in: query
+      description: 'pagination limit'
+      required: false
+      example: 10
+      schema:
+        type: integer
+  securitySchemes:
+    jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
